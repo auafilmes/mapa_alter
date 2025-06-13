@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Pontos - Alter do Chão</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; }
+    button { padding: 10px 20px; background: green; color: white; border: none; cursor: pointer; }
+    h1 { text-align: center; }
+    .output { background: #f0f0f0; padding: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Cadastro de Atrações</h1>
+  <form id="cadastro-form">
+    <label>Nome:</label>
+    <input type="text" id="nome" required>
+
+    <label>Categoria:</label>
+    <select id="tipo" required>
+      <option value="restaurante">Restaurante</option>
+      <option value="supermercado">Supermercado</option>
+      <option value="feira">Feira</option>
+      <option value="pousada">Pousada</option>
+      <option value="praia">Praia</option>
+      <option value="outro">Outro</option>
+    </select>
+
+    <label>Descrição:</label>
+    <textarea id="descricao" rows="3" required></textarea>
+
+    <label>Latitude:</label>
+    <input type="number" step="any" id="latitude" required>
+
+    <label>Longitude:</label>
+    <input type="number" step="any" id="longitude" required>
+
+    <button type="submit">Gerar JSON</button>
+  </form>
+
+  <h3>Resultado:</h3>
+  <div class="output" id="resultado"></div>
+
+  <script>
+    document.getElementById('cadastro-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const ponto = {
+        nome: document.getElementById('nome').value,
+        tipo: document.getElementById('tipo').value,
+        descricao: document.getElementById('descricao').value,
+        latitude: parseFloat(document.getElementById('latitude').value),
+        longitude: parseFloat(document.getElementById('longitude').value)
+      };
+
+      const resultado = JSON.stringify(ponto, null, 2);
+      document.getElementById('resultado').textContent = resultado;
+    });
+  </script>
+</body>
+</html>
