@@ -1,74 +1,75 @@
-// ✅ COLE AQUI SUA CHAVE DO MAPBOX
-mapboxgl.accessToken = 'pk.eyJ1IjoiYXVhZmlsbWVzIiwiYSI6ImNtOHRscHZoazBjamsya3EwajV5cGkxODMifQ.w36wEtTElcFXKKnU3_SLUQ';
+mapboxgl.accessToken = 'SUA_CHAVE_MAPBOX_AQUI';
 
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v11',
-  center: [-54.9495, -2.5045], // Centro de Alter do Chão
+  center: [-54.9495, -2.5045],
   zoom: 15
 });
 
-// Adiciona marcador do usuário (localização atual)
 let userMarker;
-navigator.geolocation.getCurrentPosition(
-  (pos) => {
-    const userCoords = [pos.coords.longitude, pos.coords.latitude];
-    userMarker = new mapboxgl.Marker({ color: 'blue' })
-      .setLngLat(userCoords)
-      .addTo(map);
-  },
-  () => alert("Não foi possível acessar sua localização.")
-);
+navigator.geolocation.getCurrentPosition((position) => {
+  const userCoords = [position.coords.longitude, position.coords.latitude];
+  userMarker = new mapboxgl.Marker({ color: 'blue' })
+    .setLngLat(userCoords)
+    .addTo(map);
+}, () => alert("Não foi possível acessar sua localização."));
 
-// Desenha a rota até um ponto selecionado
 function tracarRota(destino) {
-  navigator.geolocation.getCurrentPosition((pos) => {
-    const origem = [pos.coords.longitude, pos.coords.latitude];
-    const rotaURL = `https://api.mapbox.com/directions/v5/mapbox/driving/${origem[0]},${origem[1]};${destino[0]},${destino[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
-
-    fetch(rotaURL)
+  navigator.geolocation.getCurrentPosition((position) => {
+    const origem = [position.coords.longitude, position.coords.latitude];
+    fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${origem[0]},${origem[1]};${destino[0]},${destino[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`)
       .then(res => res.json())
       .then(data => {
         const rota = data.routes[0].geometry;
-
-        if (map.getSource('rota')) {
-          map.getSource('rota').setData(rota);
-        } else {
-          map.addSource('rota', {
-            type: 'geojson',
-            data: rota
-          });
-          map.addLayer({
-            id: 'rota',
-            type: 'line',
-            source: 'rota',
-            paint: {
-              'line-color': '#3887be',
-              'line-width': 5
-            }
-          });
-        }
+        map.getSource('rota')?.setData(rota) || map.addSource('rota', {
+          type: 'geojson', data: rota
+        });
+        map.getLayer('rota') || map.addLayer({
+          id: 'rota', type: 'line', source: 'rota',
+          paint: { 'line-color': '#3b9ddd', 'line-width': 5 }
+        });
       });
   });
 }
 
-// Carrega e exibe os pontos do arquivo pontos.js
+let todosLocais = [];
+let marcadores = [];
+
+function renderizarLocais(filtro) {
+  const lista = document.getElementById('local-list');
+  lista.innerHTML = '';
+  marcadores.forEach(m => m.remove());
+  marcadores = [];
+
+  const locaisFiltrados = filtro === 'todas' ? todosLocais : todosLocais.filter(l => l.tipo === filtro);
+
+  locaisFiltrados.forEach(l => {
+    const el = document.createElement('li');
+    el.textContent = `${l.nome} (${l.tipo})`;
+    el.onclick = () => {
+      new mapboxgl.Popup()
+        .setLngLat([l.longitude, l.latitude])
+        .setHTML(`<strong>${l.nome}</strong><p>${l.descricao}</p>`)
+        .addTo(map);
+      tracarRota([l.longitude, l.latitude]);
+    };
+    lista.appendChild(el);
+
+    const marcador = new mapboxgl.Marker()
+      .setLngLat([l.longitude, l.latitude])
+      .addTo(map);
+    marcadores.push(marcador);
+  });
+}
+
 fetch('pontos.js')
   .then(res => res.json())
   .then(locais => {
-    const lista = document.getElementById('local-list');
-
-    locais.forEach(l => {
-      // Adiciona marcador no mapa
-      new mapboxgl.Marker()
-        .setLngLat([l.longitude, l.latitude])
-        .setPopup(new mapboxgl.Popup().setHTML(`<strong>${l.nome}</strong><p>${l.descricao}</p>`))
-        .addTo(map);
-
-      // Adiciona item na lista lateral
-      const item = document.createElement('li');
-      item.textContent = `${l.nome} (${l.tipo})`;
-      item.onclick = () => tracarRota([l.longitude, l.latitude]);
-      lista.appendChild(item);
-    });
+    todosLocais = locais;
+    renderizarLocais('todas');
   });
+
+document.getElementById('filtro').addEventListener('change', (e) => {
+  renderizarLocais(e.target.value);
+});
