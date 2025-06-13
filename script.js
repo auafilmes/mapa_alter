@@ -1,5 +1,5 @@
 // ✅ COLE AQUI SUA CHAVE DO MAPBOX
-mapboxgl.accessToken = 'SUA_CHAVE_PUBLICA_DO_MAPBOX';
+mapboxgl.accessToken = 'pk.eyJ1IjoiYXVhZmlsbWVzIiwiYSI6ImNtOHRscHZoazBjamsya3EwajV5cGkxODMifQ.w36wEtTElcFXKKnU3_SLUQ';
 
 const map = new mapboxgl.Map({
   container: 'map',
