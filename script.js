@@ -1,4 +1,4 @@
-mapboxgl.accessToken = 'pk.eyJ1IjoiYXVhZmlsbWVzIiwiYSI6ImNtOHRscHZoazBjamsya3EwajV5cGkxODMifQ.w36wEtTElcFXKKnU3_SLUQ';
+mapboxgl.accessToken = 'SUA_CHAVE_MAPBOX_AQUI';
 
 const map = new mapboxgl.Map({
   container: 'map',
@@ -36,40 +36,64 @@ function tracarRota(destino) {
 let todosLocais = [];
 let marcadores = [];
 
-function renderizarLocais(filtro) {
-  const lista = document.getElementById('local-list');
-  lista.innerHTML = '';
+function limparMarcadores() {
   marcadores.forEach(m => m.remove());
   marcadores = [];
+}
 
-  const locaisFiltrados = filtro === 'todas' ? todosLocais : todosLocais.filter(l => l.tipo === filtro);
+function renderizarLista(locais) {
+  const lista = document.getElementById('local-list');
+  lista.innerHTML = '';
 
-  locaisFiltrados.forEach(l => {
-    const el = document.createElement('li');
-    el.textContent = `${l.nome} (${l.tipo})`;
-    el.onclick = () => {
-      new mapboxgl.Popup()
-        .setLngLat([l.longitude, l.latitude])
-        .setHTML(`<strong>${l.nome}</strong><p>${l.descricao}</p>`)
-        .addTo(map);
-      tracarRota([l.longitude, l.latitude]);
-    };
-    lista.appendChild(el);
+  locais.forEach((l, i) => {
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `check-${i}`;
+    checkbox.dataset.index = i;
+    checkbox.dataset.tipo = l.tipo;
 
-    const marcador = new mapboxgl.Marker()
-      .setLngLat([l.longitude, l.latitude])
-      .addTo(map);
-    marcadores.push(marcador);
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        const marcador = new mapboxgl.Marker()
+          .setLngLat([l.longitude, l.latitude])
+          .setPopup(new mapboxgl.Popup().setHTML(`<strong>${l.nome}</strong><p>${l.descricao}</p>`))
+          .addTo(map);
+        marcadores.push(marcador);
+      } else {
+        limparMarcadores();
+        document.querySelectorAll('input[type=checkbox]:checked').forEach(el => {
+          const i = el.dataset.index;
+          const local = todosLocais[i];
+          const marcador = new mapboxgl.Marker()
+            .setLngLat([local.longitude, local.latitude])
+            .setPopup(new mapboxgl.Popup().setHTML(`<strong>${local.nome}</strong><p>${local.descricao}</p>`))
+            .addTo(map);
+          marcadores.push(marcador);
+        });
+      }
+    });
+
+    const label = document.createElement('label');
+    label.htmlFor = checkbox.id;
+    label.textContent = ` ${l.nome} (${l.tipo})`;
+
+    const item = document.createElement('li');
+    item.appendChild(checkbox);
+    item.appendChild(label);
+    lista.appendChild(item);
   });
 }
+
+document.getElementById('filtro').addEventListener('change', (e) => {
+  limparMarcadores();
+  const filtro = e.target.value;
+  const locaisFiltrados = filtro === 'todas' ? todosLocais : todosLocais.filter(l => l.tipo === filtro);
+  renderizarLista(locaisFiltrados);
+});
 
 fetch('pontos.js')
   .then(res => res.json())
   .then(locais => {
     todosLocais = locais;
-    renderizarLocais('todas');
+    renderizarLista(todosLocais);
   });
-
-document.getElementById('filtro').addEventListener('change', (e) => {
-  renderizarLocais(e.target.value);
-});
